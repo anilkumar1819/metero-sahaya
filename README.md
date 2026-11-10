@@ -1,40 +1,32 @@
-# Metro Sahaya (Java + SQL)
+# 🚇 Metro Sahaya
 
-Guided metro help for first-time travellers, with passenger details, demo payment and printable tickets.
-Plain Java 17+ (built-in HttpServer + JDBC) and an H2 SQL database.
+A web tool that helps **first-time metro travelers from village and rural backgrounds** find their route, understand ticketing, and book a ticket, in **English, Hindi and Kannada**.
 
-## Run
-Windows (put the H2 jar in this folder, change the jar name if yours differs):
+**🔗 Live demo:** https://metero-sahaya.onrender.com
+*(Free hosting: if the app has been idle, the first load can take about a minute.)*
 
-    mkdir out
-    javac -encoding UTF-8 -cp h2-2.5.252.jar -d out src\MetroSahaya.java
-    java -Dfile.encoding=UTF-8 -cp "out;h2-2.5.252.jar" MetroSahaya 8080
+> Demo project: simplified map, sample fares and demo payment. Not official. Please use fake names and a fake mobile number.
 
-Mac/Linux: use `:` instead of `;` and `/` instead of `\`, or `H2_JAR=/path/to/h2.jar ./run.sh`.
-Then open http://localhost:8080
+## Features
+- Step-by-step route guidance with interchange instructions and a "read aloud" button
+- Guide to using the metro (entry, ticket, gate, platform, exit) in 3 languages
+- Booking flow: passenger details for up to 6 travellers, demo payment, printable ticket
+- Ticket lookup using the ticket code and last 4 digits of the mobile number
+- Large text and simple screens for non-tech-savvy users
 
-Delete the `data/` folder to reset the database. A database made by the first version is upgraded automatically.
+## Tech
+- **Java 21**: built-in `HttpServer` and JDBC, no frameworks
+- **SQL (H2)**: stations, lines, fares, tickets and passengers tables, with an `interchanges` view
+- **Dijkstra's algorithm** for the best route, including line changes
+- **HTML, CSS, JavaScript** front end
+- Deployed on **Render** with Docker
 
-## Booking flow
-1. Choose start and destination, press "Show me the way".
-2. Press "Book ticket": choose number of passengers (1-6), enter name, age and gender for each,
-   a contact name, a 10-digit mobile number, and a payment method (UPI / Card = demo, Cash = pay at counter).
-3. You get a ticket with a code (MS + 8 digits). Print it, or view it later with code + last 4 digits of the mobile number.
-Sample rule: children under 5 travel free. Payment is a DEMO: no real money is charged.
-
-## API
-- GET  /api/stations
-- GET  /api/route?from=ID&to=ID&lang=en|hi|kn
-- GET  /api/guide?lang=en|hi|kn
-- POST /api/book   (form fields: from,to,contact_name,phone,pay,n,name1,age1,gender1,...)
-- GET  /api/ticket?code=MS12345678&phone4=1234
-
-Network, fares and tickets are sample data, not official.
-
-## Put it online (free): GitHub + Render
-1. Create a GitHub repository and upload everything in this folder (the .gitignore keeps data/, out/ and jars out).
-2. On render.com sign in with GitHub, choose New > Web Service, pick the repository.
-3. Language/Runtime: Docker (it finds the Dockerfile). Instance type: Free. Click Create Web Service.
-4. After the build, Render shows your link: https://<name>.onrender.com
-Notes: the free plan sleeps after 15 minutes idle, so the first open can take up to a minute.
-The database lives inside the container, so tickets reset when the service restarts. That is fine for a demo.
+## Run locally
+1. Install JDK 17 or newer and download the H2 jar from h2database.com.
+2. Compile and start:
+   ```
+   javac -encoding UTF-8 -cp h2.jar -d out src/MetroSahaya.java
+   java -Dfile.encoding=UTF-8 -cp "out;h2.jar" MetroSahaya 8080
+   ```
+   (Use `:` instead of `;` on Mac or Linux.)
+3. Open http://localhost:8080
