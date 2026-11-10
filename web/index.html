@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro Sahaya</title>
+<style>
+  :root { --bg:#fffdf7; --ink:#1b1b1b; --card:#fff; --line:#d9d4c7; --brand:#b71c1c; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:20px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--brand); color:#fff; padding:16px 20px; }
+  header h1 { margin:0; font-size:28px; }
+  header p { margin:4px 0 0; font-size:18px; }
+  main { max-width:760px; margin:0 auto; padding:16px; }
+  .langs { display:flex; gap:8px; margin:12px 0; }
+  .langs button { flex:1; padding:12px; font-size:20px; border:2px solid var(--brand); background:#fff; border-radius:10px; cursor:pointer; }
+  .langs button.on { background:var(--brand); color:#fff; }
+  label { display:block; font-weight:700; margin:14px 0 4px; }
+  select, input[type=number], input[type=text], input[type=tel] { width:100%; padding:14px; font-size:20px; border:2px solid #888; border-radius:10px; background:#fff; }
+  .btn { width:100%; padding:16px; margin-top:16px; font-size:22px; font-weight:700; color:#fff; background:var(--brand); border:0; border-radius:12px; cursor:pointer; }
+  .btn.alt { background:#1565c0; } .btn.ghost { background:#fff; color:var(--brand); border:2px solid var(--brand); }
+  .btn:disabled { opacity:.6; cursor:wait; }
+  .card { background:var(--card); border:1px solid var(--line); border-left:10px solid #999; border-radius:12px; padding:14px 16px; margin:14px 0; }
+  .change { background:#fff8e1; border:2px dashed #f9a825; border-radius:12px; padding:10px 14px; margin:14px 0; font-weight:700; }
+  .badge { display:inline-block; color:#fff; padding:2px 12px; border-radius:20px; font-weight:700; font-size:17px; }
+  .summary { font-size:24px; font-weight:800; margin:18px 0 4px; }
+  .err { color:#b71c1c; font-weight:700; margin-top:12px; }
+  h2 { margin-top:34px; }
+  small { color:#555; }
+  /* booking */
+  .box { background:#fff; border:2px solid #1565c0; border-radius:14px; padding:6px 16px 16px; margin-top:18px; }
+  .pax { border:1px solid var(--line); border-radius:12px; padding:4px 12px 12px; margin:12px 0; background:#fafafa; }
+  .row { display:flex; gap:10px; } .row > div { flex:1; }
+  .pays label { display:flex; gap:10px; align-items:center; font-weight:600; border:2px solid #888; border-radius:10px; padding:12px; margin:8px 0; }
+  .pays input { width:22px; height:22px; }
+  .warn { background:#fff3cd; border:2px solid #f9a825; border-radius:10px; padding:10px 14px; font-weight:700; margin:10px 0; }
+  .totalbar { font-size:26px; font-weight:800; margin:14px 0 0; }
+  /* ticket */
+  .ticket { border:3px solid #1565c0; border-radius:14px; padding:16px; margin-top:16px; background:#e3f2fd; }
+  .ticket .code { font-size:36px; font-weight:800; letter-spacing:3px; }
+  .ticket table { width:100%; border-collapse:collapse; margin:10px 0; font-size:18px; }
+  .ticket th, .ticket td { text-align:left; padding:6px 8px; border-bottom:1px solid #90caf9; }
+  .stamp { display:inline-block; padding:4px 14px; border-radius:20px; font-weight:800; color:#fff; background:#2e7d32; }
+  .stamp.pending { background:#ef6c00; }
+  @media print {
+    body * { visibility:hidden; }
+    .ticket, .ticket * { visibility:visible; }
+    .ticket { position:absolute; left:0; top:0; width:100%; }
+    .noprint { display:none !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🚇 Metro Sahaya</h1>
+  <p id="tagline"></p>
+</header>
+<main>
+  <div class="langs" id="langs"></div>
+
+  <label for="from" id="lblFrom"></label>
+  <select id="from"></select>
+  <label for="to" id="lblTo"></label>
+  <select id="to"></select>
+  <button class="btn" id="go"></button>
+
+  <div id="result"></div>
+  <div id="book"></div>
+  <div id="ticketOut"></div>
+
+  <h2 id="lookupTitle"></h2>
+  <div class="box">
+    <label for="lcode" id="lblCode"></label>
+    <input type="text" id="lcode" placeholder="MS12345678" autocomplete="off">
+    <label for="lphone" id="lblLast4"></label>
+    <input type="tel" id="lphone" inputmode="numeric" maxlength="4" placeholder="1234">
+    <button class="btn ghost" id="lookupBtn"></button>
+    <div id="lookupOut"></div>
+  </div>
+
+  <h2 id="guideTitle"></h2>
+  <div id="guide"></div>
+  <p><small id="disclaimer"></small></p>
+</main>
+
+<script>
+const UI = {
+  en: { tag:"Your helper for the first metro ride", from:"I am at (start station)", to:"I want to go to", go:"Show me the way",
+        listen:"🔊 Read aloud", guide:"How to use the metro, step by step",
+        pick:"Choose station", step:"Step", disc:"Demo project: simplified map, sample fares and demo payment. Not official, no real money is charged.", vl:"en-IN",
+        fake:"Demo only: use made-up names and a fake mobile number (for example 9999999999). Do not enter real personal details.", book:"Book ticket", bookTitle:"Passenger details", howMany:"Number of passengers", passenger:"Passenger", pname:"Full name", age:"Age", gender:"Gender",
+        M:"Male", F:"Female", O:"Other", contact:"Contact person name", phone:"Mobile number (10 digits)", payHdr:"How will you pay?",
+        UPI:"UPI (demo)", CARD:"Card (demo)", CASH:"Cash at the counter", free:"Children under 5 travel free (sample rule).", total:"Total", fare:"Fare",
+        payBtn:"Pay and get ticket", cashBtn:"Reserve and pay at counter", busy:"Please wait…",
+        ticketTitle:"Your ticket", date:"Travel date", route:"Route", status_PAID:"PAID", status_PAY_AT_COUNTER:"PAY AT COUNTER",
+        print:"Print ticket", showIt:"Show this ticket at the gate. Save the code and the last 4 digits of your mobile number to view it later.",
+        lookup:"View my ticket", lblCode:"Ticket code", last4:"Last 4 digits of mobile number", view:"View", name:"Name" },
+  hi: { tag:"पहली मेट्रो यात्रा में आपका साथी", from:"मैं यहाँ हूँ (शुरुआती स्टेशन)", to:"मुझे यहाँ जाना है", go:"रास्ता दिखाओ",
+        listen:"🔊 सुनें", guide:"मेट्रो कैसे इस्तेमाल करें, कदम दर कदम",
+        pick:"स्टेशन चुनें", step:"कदम", disc:"डेमो प्रोजेक्ट: सरल नक्शा, नमूना किराया और डेमो भुगतान। आधिकारिक नहीं, असली पैसे नहीं कटते।", vl:"hi-IN",
+        fake:"केवल डेमो: बनावटी नाम और नकली मोबाइल नंबर (जैसे 9999999999) डालें। असली निजी जानकारी न डालें।", book:"टिकट बुक करें", bookTitle:"यात्रियों का विवरण", howMany:"यात्रियों की संख्या", passenger:"यात्री", pname:"पूरा नाम", age:"उम्र", gender:"लिंग",
+        M:"पुरुष", F:"महिला", O:"अन्य", contact:"संपर्क करने वाले का नाम", phone:"मोबाइल नंबर (10 अंक)", payHdr:"भुगतान कैसे करेंगे?",
+        UPI:"UPI (डेमो)", CARD:"कार्ड (डेमो)", CASH:"काउंटर पर नकद", free:"5 साल से छोटे बच्चे मुफ़्त (नमूना नियम)।", total:"कुल", fare:"किराया",
+        payBtn:"भुगतान करें और टिकट पाएं", cashBtn:"बुक करें, काउंटर पर भुगतान करें", busy:"कृपया प्रतीक्षा करें…",
+        ticketTitle:"आपका टिकट", date:"यात्रा की तारीख", route:"रास्ता", status_PAID:"भुगतान हो गया", status_PAY_AT_COUNTER:"काउंटर पर भुगतान करें",
+        print:"टिकट प्रिंट करें", showIt:"गेट पर यह टिकट दिखाएं। बाद में देखने के लिए कोड और मोबाइल के आखिरी 4 अंक सुरक्षित रखें।",
+        lookup:"मेरा टिकट देखें", lblCode:"टिकट कोड", last4:"मोबाइल नंबर के आखिरी 4 अंक", view:"देखें", name:"नाम" },
+  kn: { tag:"ಮೊದಲ ಮೆಟ್ರೋ ಪ್ರಯಾಣಕ್ಕೆ ನಿಮ್ಮ ಸಹಾಯಕ", from:"ನಾನು ಇಲ್ಲಿದ್ದೇನೆ (ಆರಂಭ ನಿಲ್ದಾಣ)", to:"ನಾನು ಇಲ್ಲಿಗೆ ಹೋಗಬೇಕು", go:"ದಾರಿ ತೋರಿಸಿ",
+        listen:"🔊 ಕೇಳಿ", guide:"ಮೆಟ್ರೋ ಹೇಗೆ ಬಳಸುವುದು, ಹಂತ ಹಂತವಾಗಿ",
+        pick:"ನಿಲ್ದಾಣ ಆರಿಸಿ", step:"ಹಂತ", disc:"ಡೆಮೊ ಯೋಜನೆ: ಸರಳ ನಕ್ಷೆ, ಮಾದರಿ ದರ ಮತ್ತು ಡೆಮೊ ಪಾವತಿ. ಅಧಿಕೃತವಲ್ಲ, ನಿಜವಾದ ಹಣ ಕಡಿತವಾಗುವುದಿಲ್ಲ.", vl:"kn-IN",
+        fake:"ಡೆಮೊ ಮಾತ್ರ: ಕಾಲ್ಪನಿಕ ಹೆಸರು ಮತ್ತು ನಕಲಿ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (ಉದಾ. 9999999999) ಬಳಸಿ. ನಿಜವಾದ ವೈಯಕ್ತಿಕ ವಿವರ ಹಾಕಬೇಡಿ.", book:"ಟಿಕೆಟ್ ಬುಕ್ ಮಾಡಿ", bookTitle:"ಪ್ರಯಾಣಿಕರ ವಿವರ", howMany:"ಪ್ರಯಾಣಿಕರ ಸಂಖ್ಯೆ", passenger:"ಪ್ರಯಾಣಿಕ", pname:"ಪೂರ್ಣ ಹೆಸರು", age:"ವಯಸ್ಸು", gender:"ಲಿಂಗ",
+        M:"ಪುರುಷ", F:"ಮಹಿಳೆ", O:"ಇತರೆ", contact:"ಸಂಪರ್ಕ ವ್ಯಕ್ತಿಯ ಹೆಸರು", phone:"ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (10 ಅಂಕೆ)", payHdr:"ಹೇಗೆ ಪಾವತಿಸುವಿರಿ?",
+        UPI:"UPI (ಡೆಮೊ)", CARD:"ಕಾರ್ಡ್ (ಡೆಮೊ)", CASH:"ಕೌಂಟರ್‌ನಲ್ಲಿ ನಗದು", free:"5 ವರ್ಷದೊಳಗಿನ ಮಕ್ಕಳಿಗೆ ಉಚಿತ (ಮಾದರಿ ನಿಯಮ).", total:"ಒಟ್ಟು", fare:"ದರ",
+        payBtn:"ಪಾವತಿಸಿ ಮತ್ತು ಟಿಕೆಟ್ ಪಡೆಯಿರಿ", cashBtn:"ಬುಕ್ ಮಾಡಿ, ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿಸಿ", busy:"ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ…",
+        ticketTitle:"ನಿಮ್ಮ ಟಿಕೆಟ್", date:"ಪ್ರಯಾಣದ ದಿನಾಂಕ", route:"ಮಾರ್ಗ", status_PAID:"ಪಾವತಿ ಆಗಿದೆ", status_PAY_AT_COUNTER:"ಕೌಂಟರ್‌ನಲ್ಲಿ ಪಾವತಿಸಿ",
+        print:"ಟಿಕೆಟ್ ಪ್ರಿಂಟ್ ಮಾಡಿ", showIt:"ಗೇಟ್‌ನಲ್ಲಿ ಈ ಟಿಕೆಟ್ ತೋರಿಸಿ. ನಂತರ ನೋಡಲು ಕೋಡ್ ಮತ್ತು ಮೊಬೈಲ್‌ನ ಕೊನೆಯ 4 ಅಂಕೆ ಉಳಿಸಿಕೊಳ್ಳಿ.",
+        lookup:"ನನ್ನ ಟಿಕೆಟ್ ನೋಡಿ", lblCode:"ಟಿಕೆಟ್ ಕೋಡ್", last4:"ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯ ಕೊನೆಯ 4 ಅಂಕೆ", view:"ನೋಡಿ", name:"ಹೆಸರು" }
+};
+const NAMES = { en:"English", hi:"हिंदी", kn:"ಕನ್ನಡ" };
+let lang = "en", stations = [], lastRoute = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path, opts) {
+  const r = await fetch(path, opts); const j = await r.json();
+  if (!r.ok) throw new Error(j.error || "Error"); return j;
+}
+
+function fillSelect(sel, keep) {
+  sel.innerHTML = `<option value="">${UI[lang].pick}</option>` + stations.map(s =>
+    `<option value="${s.id}">${esc(s.name)}${s.interchange ? " ⇄" : ""} — ${esc(s.landmark)}</option>`).join("");
+  if (keep) sel.value = keep;
+}
+
+function applyLang() {
+  const t = UI[lang];
+  document.documentElement.lang = lang;
+  $("tagline").textContent = t.tag; $("lblFrom").textContent = t.from; $("lblTo").textContent = t.to;
+  $("go").textContent = t.go; $("guideTitle").textContent = t.guide; $("disclaimer").textContent = t.disc;
+  $("lookupTitle").textContent = t.lookup; $("lblCode").textContent = t.lblCode; $("lblLast4").textContent = t.last4; $("lookupBtn").textContent = t.view;
+  $("langs").innerHTML = Object.keys(NAMES).map(k => `<button class="${k===lang?'on':''}" onclick="setLang('${k}')">${NAMES[k]}</button>`).join("");
+  fillSelect($("from"), $("from").value); fillSelect($("to"), $("to").value);
+  $("book").innerHTML = ""; $("ticketOut").innerHTML = "";
+  loadGuide(); if ($("from").value && $("to").value) showRoute();
+}
+function setLang(l) { lang = l; applyLang(); }
+
+async function loadGuide() {
+  const steps = await api("/api/guide?lang=" + lang);
+  $("guide").innerHTML = steps.map(s => `<div class="card"><b>${UI[lang].step} ${s.step}: ${esc(s.title)}</b><br>${esc(s.body)}</div>`).join("");
+}
+
+async function showRoute() {
+  const f = $("from").value, t = $("to").value, out = $("result");
+  $("book").innerHTML = ""; $("ticketOut").innerHTML = "";
+  if (!f || !t) { out.innerHTML = ""; return; }
+  try {
+    const r = await api(`/api/route?from=${f}&to=${t}&lang=${lang}`);
+    lastRoute = { f, t, fare: r.fare, from: r.from, to: r.to };
+    out.innerHTML = r.legs.map((l, i) =>
+      (l.change ? `<div class="change">🔁 ${esc(l.change)}</div>` : "") +
+      `<div class="card" style="border-left-color:${l.color}">
+         <span class="badge" style="background:${l.color}">${esc(l.line)}</span>
+         <div><b>${i+1}.</b> ${esc(l.text)}</div></div>`).join("") +
+      `<div class="summary">${esc(r.summary)}</div>
+       <button class="btn ghost" onclick="speak()">${UI[lang].listen}</button>
+       <button class="btn alt" onclick="openBooking()">${UI[lang].book}</button>`;
+    window._speech = r.legs.map(l => (l.change ? l.change + " " : "") + l.text).join(" ") + " " + r.summary;
+  } catch (e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+function speak() {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(window._speech); u.lang = UI[lang].vl; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+/* ---------------- booking form ---------------- */
+function openBooking() {
+  const t = UI[lang];
+  $("ticketOut").innerHTML = "";
+  $("book").innerHTML = `<div class="box">
+    <h2 style="margin-top:14px">${t.bookTitle}</h2>
+    <div class="warn">⚠ ${t.fake}</div>
+    <div>${esc(lastRoute.from)} → ${esc(lastRoute.to)} · ${t.fare}: ₹${lastRoute.fare}</div>
+    <label for="n">${t.howMany}</label>
+    <select id="n" onchange="renderPax()">${[1,2,3,4,5,6].map(i => `<option>${i}</option>`).join("")}</select>
+    <div id="paxRows"></div>
+    <label for="cname">${t.contact}</label>
+    <input type="text" id="cname" maxlength="60" autocomplete="name">
+    <label for="phone">${t.phone}</label>
+    <input type="tel" id="phone" inputmode="numeric" maxlength="10" autocomplete="tel">
+    <label>${t.payHdr}</label>
+    <div class="pays">
+      ${["UPI","CARD","CASH"].map((m, i) => `<label><input type="radio" name="pay" value="${m}" ${i===0?"checked":""} onchange="updateTotal()"> ${t[m]}</label>`).join("")}
+    </div>
+    <small>${t.free}</small>
+    <div class="totalbar" id="totalBar"></div>
+    <div class="err" id="bookErr"></div>
+    <button class="btn" id="payBtn" onclick="submitBooking()"></button>
+  </div>`;
+  renderPax();
+  $("book").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderPax() {
+  const t = UI[lang], n = +$("n").value, old = [];
+  document.querySelectorAll(".pax").forEach((p, i) => old[i] = [p.querySelector(".pn").value, p.querySelector(".pa").value, p.querySelector(".pg").value]);
+  $("paxRows").innerHTML = Array.from({ length: n }, (_, i) => `
+    <div class="pax"><label>${t.passenger} ${i+1}: ${t.pname}</label>
+      <input type="text" class="pn" maxlength="60" value="${esc((old[i]||[])[0]||"")}">
+      <div class="row">
+        <div><label>${t.age}</label><input type="number" class="pa" min="0" max="120" inputmode="numeric" value="${esc((old[i]||[])[1]||"")}" oninput="updateTotal()"></div>
+        <div><label>${t.gender}</label><select class="pg"><option value="M">${t.M}</option><option value="F">${t.F}</option><option value="O">${t.O}</option></select></div>
+      </div></div>`).join("");
+  document.querySelectorAll(".pax").forEach((p, i) => { if (old[i]) p.querySelector(".pg").value = old[i][2]; });
+  updateTotal();
+}
+
+function updateTotal() {
+  const t = UI[lang];
+  const total = [...document.querySelectorAll(".pa")].reduce((s, a) => s + (a.value !== "" && +a.value < 5 ? 0 : lastRoute.fare), 0);
+  $("totalBar").textContent = `${t.total}: ₹${total}`;
+  const cash = document.querySelector("input[name=pay]:checked").value === "CASH";
+  $("payBtn").textContent = (cash ? t.cashBtn : t.payBtn) + ` (₹${total})`;
+}
+
+async function submitBooking() {
+  const t = UI[lang], btn = $("payBtn"); $("bookErr").textContent = "";
+  const rows = [...document.querySelectorAll(".pax")];
+  const body = new URLSearchParams({ from: lastRoute.f, to: lastRoute.t, n: rows.length,
+    contact_name: $("cname").value, phone: $("phone").value, pay: document.querySelector("input[name=pay]:checked").value });
+  rows.forEach((p, i) => {
+    body.set("name" + (i+1), p.querySelector(".pn").value); body.set("age" + (i+1), p.querySelector(".pa").value);
+    body.set("gender" + (i+1), p.querySelector(".pg").value);
+  });
+  btn.disabled = true; const label = btn.textContent; btn.textContent = t.busy;
+  try {
+    const k = await api("/api/book", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    $("book").innerHTML = ""; $("result").scrollIntoView();
+    $("ticketOut").innerHTML = ticketHtml(k, true);
+    $("ticketOut").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { $("bookErr").textContent = e.message; btn.disabled = false; btn.textContent = label; }
+}
+
+/* ---------------- ticket view + lookup ---------------- */
+function ticketHtml(k, withPrint) {
+  const t = UI[lang], pending = k.status !== "PAID";
+  return `<div class="ticket">
+    <b>${t.ticketTitle}</b> <span class="stamp ${pending ? "pending" : ""}">${esc(t["status_" + k.status] || k.status)}</span>
+    <div class="code">${esc(k.code)}</div>
+    <div>${t.route}: <b>${esc(k.from)} → ${esc(k.to)}</b></div>
+    <div>${t.date}: ${esc(k.date)} · ${esc(k.contact)} · ${esc(k.phone)}</div>
+    <table><tr><th>${t.name}</th><th>${t.age}</th><th>${t.gender}</th><th>${t.fare}</th></tr>
+      ${k.passengers.map(p => `<tr><td>${esc(p.name)}</td><td>${p.age}</td><td>${esc(t[p.gender] || p.gender)}</td><td>₹${p.fare}</td></tr>`).join("")}
+    </table>
+    <div class="summary">${t.total}: ₹${k.total}</div>
+    <small>${t.showIt}</small>
+    ${withPrint ? `<button class="btn ghost noprint" onclick="window.print()">${t.print}</button>` : ""}
+  </div>`;
+}
+
+$("lookupBtn").onclick = async () => {
+  const out = $("lookupOut");
+  try {
+    const k = await api(`/api/ticket?code=${encodeURIComponent($("lcode").value.trim())}&phone4=${encodeURIComponent($("lphone").value.trim())}`);
+    out.innerHTML = ticketHtml(k, true);
+  } catch (e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+};
+
+$("go").onclick = showRoute;
+(async () => { stations = await api("/api/stations"); applyLang(); })();
+</script>
+</body>
+</html>
